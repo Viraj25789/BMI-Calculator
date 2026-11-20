@@ -1,43 +1,62 @@
-const form = document.querySelector('form');
+const form = document.querySelector(".form");
 
-form.addEventListener('submit', function(e) {
-  e.preventDefault();
+form.addEventListener("submit", async function (event) {
+  event.preventDefault();
 
-  const height = parseFloat(document.querySelector('#height').value);
-  const weight = parseFloat(document.querySelector('#weight').value);
-  const results = document.querySelector('#results');
-  const message = document.querySelector('#message');
+  const height = Number(document.querySelector("#height").value);
+  const weight = Number(document.querySelector("#weight").value);
+  const results = document.querySelector("#results");
+  const message = document.querySelector("#message");
+  const saveStatus = document.querySelector("#save-status");
 
-  if (!height || height <= 0) {
-    results.innerHTML = 'Please enter a valid height';
-    return; // Exit the function
-  } else if (!weight || weight <= 0) {
-    results.innerHTML = 'Please enter a valid weight';
-    return; // Exit the function
+  saveStatus.textContent = "";
+
+  if (!Number.isFinite(height) || height <= 0) {
+    results.textContent = "Please enter a valid height greater than zero.";
+    message.textContent = "";
+    return;
   }
 
-  const bmi = (weight / ((height * height) / 10000)).toFixed(2);
-  results.innerHTML = `<span>${bmi}</span>`;
-
-  if (bmi < 18.6) {
-    message.innerHTML = 'Underweight';
-    message.style.color = 'red';
-  } else if (bmi >= 18.6 && bmi < 24.9) {
-    message.innerHTML = 'Normal';
-    message.style.color = 'green';
-  } else {
-    message.innerHTML = 'Overweight';
-    message.style.color = 'brown';
+  if (!Number.isFinite(weight) || weight <= 0) {
+    results.textContent = "Please enter a valid weight greater than zero.";
+    message.textContent = "";
+    return;
   }
 
-  fetch('save_data.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: `height=${height}&weight=${weight}&bmi=${bmi}&status=${message.textContent}`
-  })
-  .then(response => response.text())
-  .then(data => console.log('Server response:', data))
-  .catch(error => console.error('Error saving BMI:', error));
+  const bmi = weight / ((height / 100) ** 2);
+  const roundedBmi = bmi.toFixed(2);
+  let category = "Overweight";
+
+  if (bmi < 18.5) {
+    category = "Underweight";
+  } else if (bmi < 25) {
+    category = "Normal";
+  }
+
+  results.textContent = roundedBmi;
+  message.textContent = category;
+
+  const body = new URLSearchParams({
+    height: String(height),
+    weight: String(weight),
+  });
+
+  try {
+    const response = await fetch("save_data.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+      },
+      body,
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Could not save this calculation.");
+    }
+    saveStatus.textContent = data.message;
+  } catch (error) {
+    saveStatus.textContent = error.message || "BMI calculated, but the record could not be saved.";
+  }
 });
