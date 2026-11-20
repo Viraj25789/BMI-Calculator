@@ -1,0 +1,34 @@
+name: BMI Calculator Checks
+
+on:
+  push:
+    paths:
+      - "*.php"
+      - "*.js"
+      - "*.html"
+      - "schema.sql"
+      - ".github/workflows/bmi-calculator-checks.yml"
+  pull_request:
+    paths:
+      - "*.php"
+      - "*.js"
+      - "*.html"
+      - "schema.sql"
+      - ".github/workflows/bmi-calculator-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: none
+      - name: Check PHP syntax
+        run: php -l save_data.php
+      - name: Check JavaScript syntax
+        run: node --check script.js
